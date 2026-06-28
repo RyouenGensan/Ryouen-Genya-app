@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>【源屋】婚活プロファイリング</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="婚活プロファイリング">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon.jpg?v=3">
+    <link rel="icon" type="image/jpeg" sizes="32x32" href="./icon.jpg?v=3">
+    <link rel="icon" type="image/jpeg" sizes="16x16" href="./icon.jpg?v=3">
+    <link rel="shortcut icon" href="./icon.jpg?v=3">
+
+    <!-- 🌟 真っ白エラーを防ぐ「超安定版」の部品に完全固定しています -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+
+    <style>
+        /* 🛡️ 盗用防止ガード設定（鉄壁） */
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            font-family: 'Yu Mincho', 'Noto Serif JP', 'Hiragino Mincho ProN', serif; 
+            background-color: #f8fafc; 
+            color: #0f172a; 
+            -webkit-user-select: none; user-select: none;
+        }
+        input, select, textarea { user-select: auto; -webkit-user-select: auto; }
+        button { touch-action: manipulation; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .fade-in { animation: fadeIn 0.5s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 🖐️ 手相スキャンアニメーション */
+        .scanner-line {
+            width: 100%; height: 4px; background: rgba(59, 130, 246, 0.9);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.9), 0 0 20px rgba(59, 130, 246, 0.9);
+            position: absolute; top: 0; left: 0; z-index: 10;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+    </style>
+</head>
+<body class="selection:bg-[#1e3a8a] selection:text-white" oncontextmenu="return false;">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        const Icons = {
+            ChevronRight: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>,
+            Loader2: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+            User: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Send: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
+            Scan: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>,
+            Camera: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+        };
+
+        const QUESTIONS = [
+            "結婚後も、自分の収入は自分で自由に管理したいですか？",
+            "家事や育児は、きっちり「半々」で分担するのが理想ですか？",
+            "休日はアクティブに出かけるより、家でゆっくり過ごしたいですか？",
+            "将来のマイホームや貯金など、具体的な計画を立てるのが好きですか？",
+            "食事の好みや金銭感覚は、結婚相手と完全に一致していてほしいですか？",
+            "パートナーとは毎日欠かさずLINEや電話で連絡を取り合いたいですか？",
+            "結婚しても、一人で没頭できる趣味や時間は絶対に必要ですか？",
+            "愛情表現（言葉やスキンシップ）は、日常的にしっかりしてほしいですか？",
+            "パートナーのスマホやスケジュールは、隠さずオープンにしてほしいですか？",
+            "デートの行き先や予定は、相手にリードして決めてもらう方が楽ですか？",
+            "喧嘩をした時は、時間を置かずにその日のうちに話し合って解決したいですか？",
+            "相手に直してほしい不満があっても、自分が我慢して丸く収めることが多いですか？",
+            "理詰めで解決策を言われるより、まずは感情に寄り添って話を聞いてほしいですか？",
+            "意見が対立した時は、妥協点を探るより「正しい方」をハッキリさせたいですか？",
+            "パートナーが落ち込んでいる時は、そっとしておくより声をかけて励ましたいですか？"
+        ];
+
+        const getZodiacInfo = (month, day) => {
+            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return "牡羊座";
+            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return "牡牛座";
+            if ((month == 5 && day >= 21) || (month == 6 && day <= 21)) return "双子座";
+            if ((month == 6 && day >= 22) || (month == 7 && day <= 22)) return "蟹座";
+            if ((month == 7 && day >= Normally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
